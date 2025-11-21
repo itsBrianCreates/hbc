@@ -10,8 +10,20 @@
   <div class="app">
     <header class="app-header">
       <h1>Human Behind The Curtain</h1>
-      <div id="sessionLabel" class="session-label"></div>
-      <div id="roleLabel" class="role-label"></div>
+      <div class="header-meta">
+        <div id="sessionLabel" class="session-label"></div>
+        <div class="role-controls">
+          <div id="roleLabel" class="role-label"></div>
+          <label class="role-switch">
+            <span>Switch role</span>
+            <select id="roleSwitcher">
+              <option value="">Select…</option>
+              <option value="manager">Manager</option>
+              <option value="worker">Human behind the curtain</option>
+            </select>
+          </label>
+        </div>
+      </div>
     </header>
 
     <main class="app-main">

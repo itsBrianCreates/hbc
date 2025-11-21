@@ -74,6 +74,7 @@ const sendButton = document.getElementById("sendButton");
 
 const sessionLabelEl = document.getElementById("sessionLabel");
 const roleLabelEl = document.getElementById("roleLabel");
+const roleSwitchSelect = document.getElementById("roleSwitcher");
 
 // 5. State
 
@@ -83,10 +84,14 @@ let unsubscribe = null;
 // 6. UI helpers
 
 function setRole(role) {
+  if (!role) return;
   activeRole = role;
   setStoredRole(role);
 
   rolePickerEl.classList.add("hidden");
+  if (roleSwitchSelect) {
+    roleSwitchSelect.value = role;
+  }
   updateRoleLabel();
   attachMessageListener();
 }
@@ -108,29 +113,35 @@ function renderMessages(docs) {
 
   docs.forEach((doc) => {
     const data = doc.data();
-    const role = data.role || "manager";
+    const msgRole = data.role === "worker" ? "worker" : "manager";
     const text = data.text || "";
     const ts = data.timestamp ? data.timestamp.toDate?.() || data.timestamp : null;
+    const isMine =
+      (activeRole === "manager" && msgRole === "manager") ||
+      (activeRole === "worker" && msgRole === "worker");
 
     const row = document.createElement("div");
-    row.className = `message-row ${role === "manager" ? "manager" : "worker"}`;
+    row.className = `message-row ${isMine ? "mine" : "theirs"}`;
 
     const meta = document.createElement("div");
     meta.className = "message-meta";
 
-    const who =
-      role === "manager"
-        ? "Manager"
-        : "Digital worker (you)";
+    const who = isMine ? "" : msgRole === "manager" ? "Manager" : "Digital worker";
 
     let timeStr = "";
     if (ts instanceof Date && !isNaN(ts.getTime())) {
-      const h = ts.getHours().toString().padStart(2, "0");
-      const m = ts.getMinutes().toString().padStart(2, "0");
-      timeStr = `${h}:${m}`;
+      const hours = ts.getHours();
+      const minutes = ts.getMinutes().toString().padStart(2, "0");
+      const displayHour = ((hours + 11) % 12) + 1; // convert 0-23 to 1-12
+      const period = hours >= 12 ? "PM" : "AM";
+      timeStr = `${displayHour}:${minutes} ${period}`;
     }
 
-    meta.textContent = timeStr ? `${who} · ${timeStr}` : who;
+    if (isMine) {
+      meta.textContent = timeStr;
+    } else {
+      meta.textContent = timeStr ? `${who} · ${timeStr}` : who;
+    }
 
     const bubble = document.createElement("div");
     bubble.className = "message-bubble";
@@ -211,6 +222,14 @@ async function sendMessage(text) {
 managerBtn.addEventListener("click", () => setRole("manager"));
 operatorBtn.addEventListener("click", () => setRole("worker"));
 
+if (roleSwitchSelect) {
+  roleSwitchSelect.addEventListener("change", (evt) => {
+    const nextRole = evt.target.value;
+    if (!nextRole) return;
+    setRole(nextRole);
+  });
+}
+
 messageInput.addEventListener("input", () => {
   const value = messageInput.value.trim();
   sendButton.disabled = !value;
@@ -242,8 +261,14 @@ messageForm.addEventListener("submit", (evt) => {
 
   if (!activeRole) {
     rolePickerEl.classList.remove("hidden");
+    if (roleSwitchSelect) {
+      roleSwitchSelect.value = "";
+    }
   } else {
     rolePickerEl.classList.add("hidden");
+    if (roleSwitchSelect) {
+      roleSwitchSelect.value = activeRole;
+    }
     attachMessageListener();
   }
 })();

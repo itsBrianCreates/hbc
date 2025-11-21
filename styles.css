@@ -32,10 +32,47 @@ body {
   font-size: 1.25rem;
 }
 
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.role-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .session-label,
 .role-label {
   font-size: 0.9rem;
   color: #9ca3af;
+}
+
+.role-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.role-switch select {
+  background: #0b1224;
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  border-radius: 0.55rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.role-switch select:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 1px;
 }
 
 .app-main {
@@ -159,12 +196,12 @@ button:not(:disabled):active {
   max-width: 75%;
 }
 
-.message-row.manager {
+.message-row.mine {
   align-self: flex-end;
   align-items: flex-end;
 }
 
-.message-row.worker {
+.message-row.theirs {
   align-self: flex-start;
   align-items: flex-start;
 }
@@ -182,13 +219,13 @@ button:not(:disabled):active {
   line-height: 1.4;
 }
 
-.message-row.manager .message-bubble {
+.message-row.mine .message-bubble {
   background: #4f46e5;
   color: white;
   border-bottom-right-radius: 0.15rem;
 }
 
-.message-row.worker .message-bubble {
+.message-row.theirs .message-bubble {
   background: #111827;
   border: 1px solid rgba(148, 163, 184, 0.5);
   border-bottom-left-radius: 0.15rem;
