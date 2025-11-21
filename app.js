@@ -5,8 +5,9 @@
 // before this file
 
 // 1. Firebase config
-// Replace the placeholder values with your real config from Firebase console
-const firebaseConfig = {
+// Replace the placeholder values with your real config from Firebase console.
+// You can override these defaults by defining window.HBC_FIREBASE_CONFIG before loading this file.
+const DEFAULT_FIREBASE_CONFIG = {
   apiKey: "AIzaSyDyY5EnMe-RfdiS9i6EKTG4t5ThjvrV1BE",
   authDomain: "humanbehindcurtain.firebaseapp.com",
   projectId: "humanbehindcurtain",
@@ -16,8 +17,13 @@ const firebaseConfig = {
   measurementId: "G-E3EY55Z643"
 };
 
+const firebaseConfig =
+  (typeof window !== "undefined" && window.HBC_FIREBASE_CONFIG) ||
+  DEFAULT_FIREBASE_CONFIG;
+
 // 2. Initialize Firebase and Firestore
 let db = null;
+let firebaseProjectId = firebaseConfig?.projectId || "";
 
 (function initFirebase() {
   if (!firebaseConfig || !firebaseConfig.apiKey) {
@@ -27,6 +33,7 @@ let db = null;
 
   const app = firebase.initializeApp(firebaseConfig);
   db = firebase.firestore(app);
+  firebaseProjectId = app?.options?.projectId || firebaseProjectId;
 })();
 
 // 3. Session and role setup
@@ -73,6 +80,7 @@ const messageInput = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
 
 const sessionLabelEl = document.getElementById("sessionLabel");
+const projectLabelEl = document.getElementById("projectLabel");
 const roleLabelEl = document.getElementById("roleLabel");
 const roleSwitchSelect = document.getElementById("roleSwitcher");
 const copySessionBtn = document.getElementById("copySession");
@@ -80,6 +88,8 @@ const endSessionBtn = document.getElementById("endSession");
 const copyToastEl = document.getElementById("copyToast");
 const responseTimerEl = document.getElementById("responseTimer");
 const quickRepliesEl = document.getElementById("quickReplies");
+const suggestionsBarEl = document.getElementById("suggestionsBar");
+const suggestionButtonsEl = document.getElementById("suggestionButtons");
 const workerToolsEl = document.getElementById("workerTools");
 const workspaceEl = document.querySelector(".workspace");
 const chatAvatarEl = document.getElementById("chatAvatar");
@@ -98,6 +108,7 @@ let unsubscribe = null;
 let responseTimerInterval = null;
 let responseTimerStartMs = 0;
 let pendingManagerMessageId = null;
+let suggestionUnsubscribe = null;
 
 // 6. UI helpers
 
@@ -113,6 +124,7 @@ function setRole(role) {
   updateRoleLabel();
   updateChatPersona();
   attachMessageListener();
+  attachSuggestionListener();
   renderQuickReplies();
   updateToolsVisibility();
   updateResponseTimerVisibility(false);
@@ -120,6 +132,11 @@ function setRole(role) {
 
 function updateRoleLabel() {
   sessionLabelEl.textContent = `Session: ${sessionId}`;
+  if (projectLabelEl) {
+    projectLabelEl.textContent = firebaseProjectId
+      ? `Project: ${firebaseProjectId}`
+      : "Project: not connected";
+  }
 
   if (activeRole === "manager") {
     roleLabelEl.textContent = "You are: Manager (talking to the digital worker)";
@@ -225,6 +242,36 @@ function renderQuickReplies() {
     ...QUICK_REPLY_OPTIONS.map((text) => {
       const btn = document.createElement("button");
       btn.type = "button";
+      btn.textContent = text;
+      btn.setAttribute("data-text", text);
+      return btn;
+    })
+  );
+}
+
+function renderSuggestions(suggestions) {
+  if (!suggestionsBarEl || !suggestionButtonsEl) return;
+  const isWorker = activeRole === "worker";
+
+  if (!isWorker) {
+    suggestionsBarEl.hidden = true;
+    suggestionButtonsEl.replaceChildren();
+    return;
+  }
+
+  const hasSuggestions = Array.isArray(suggestions) && suggestions.length > 0;
+  suggestionsBarEl.hidden = !hasSuggestions;
+
+  if (!hasSuggestions) {
+    suggestionButtonsEl.replaceChildren();
+    return;
+  }
+
+  suggestionButtonsEl.replaceChildren(
+    ...suggestions.map((text) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "suggestion-pill";
       btn.textContent = text;
       btn.setAttribute("data-text", text);
       return btn;
@@ -402,7 +449,63 @@ function attachMessageListener() {
   );
 }
 
+function attachSuggestionListener() {
+  if (!db) {
+    console.error("Firestore not initialized");
+    return;
+  }
+
+  if (suggestionUnsubscribe) {
+    suggestionUnsubscribe();
+    suggestionUnsubscribe = null;
+  }
+
+  if (activeRole !== "worker") {
+    renderSuggestions([]);
+    return;
+  }
+
+  const suggestionsRef = db
+    .collection("sessions")
+    .doc(sessionId)
+    .collection("suggestions")
+    .orderBy("createdAt", "asc");
+
+  suggestionUnsubscribe = suggestionsRef.onSnapshot(
+    (snapshot) => {
+      const suggestions = snapshot.docs
+        .map((doc) => {
+          const value = doc.data()?.text;
+          return typeof value === "string" ? value.trim() : "";
+        })
+        .filter(Boolean);
+      renderSuggestions(suggestions);
+    },
+    (err) => {
+      console.error("Error listening to suggestions", err);
+    }
+  );
+}
+
 // 8. Send message
+
+async function clearSuggestionsForSession() {
+  if (!db) return;
+  try {
+    const suggestionsRef = db
+      .collection("sessions")
+      .doc(sessionId)
+      .collection("suggestions");
+    const snapshot = await suggestionsRef.get();
+    if (snapshot.empty) return;
+
+    const batch = db.batch();
+    snapshot.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  } catch (err) {
+    console.error("Failed to clear suggestions", err);
+  }
+}
 
 async function sendMessage(text) {
   if (!db) {
@@ -429,6 +532,8 @@ async function sendMessage(text) {
     if (role === "worker") {
       stopResponseTimer();
       pendingManagerMessageId = null;
+      renderSuggestions([]);
+      await clearSuggestionsForSession();
     }
   } catch (err) {
     console.error("Error sending message", err);
@@ -491,6 +596,17 @@ if (quickRepliesEl) {
   });
 }
 
+if (suggestionButtonsEl) {
+  suggestionButtonsEl.addEventListener("click", (evt) => {
+    const btn = evt.target.closest("button[data-text]");
+    if (!btn) return;
+    if (activeRole !== "worker") return;
+    const text = btn.getAttribute("data-text") || "";
+    if (!text) return;
+    sendMessage(text);
+  });
+}
+
 // 10. Initial boot
 
 (function boot() {
@@ -509,6 +625,7 @@ if (quickRepliesEl) {
       roleSwitchSelect.value = activeRole;
     }
     attachMessageListener();
+    attachSuggestionListener();
     updateToolsVisibility();
     updateChatPersona();
   }

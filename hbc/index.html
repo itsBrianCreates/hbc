@@ -11,6 +11,7 @@
       <header class="app-header">
         <h1>Human Behind The Curtain</h1>
         <div class="header-actions">
+          <div id="projectLabel" class="session-pill"></div>
           <div id="sessionLabel" class="session-pill"></div>
           <button id="copySession" type="button" class="ghost-btn">Copy Session Link</button>
           <button id="endSession" type="button" class="danger-btn">End Session</button>
@@ -64,6 +65,11 @@
           </div>
 
           <div class="chat-history" id="messages"></div>
+
+          <div id="suggestionsBar" class="suggestions-bar" hidden>
+            <div class="suggestions-bar__label">Suggested replies</div>
+            <div id="suggestionButtons" class="suggestions-bar__buttons"></div>
+          </div>
 
           <div id="quickReplies" class="quick-replies" hidden></div>
 

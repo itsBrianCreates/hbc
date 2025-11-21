@@ -512,6 +512,40 @@ button:not(:disabled):active {
   background: rgba(99, 102, 241, 0.12);
 }
 
+.suggestions-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 1.25rem 0.65rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+  background: #060a16;
+}
+
+.suggestions-bar__label {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.suggestions-bar__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.suggestions-bar .suggestion-pill {
+  background: #0f172a;
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.suggestions-bar .suggestion-pill:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.12);
+}
+
 .message-row {
   display: flex;
   flex-direction: column;
