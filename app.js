@@ -7,12 +7,13 @@
 // 1. Firebase config
 // Replace the placeholder values with your real config from Firebase console
 const firebaseConfig = {
-  apiKey: "AIzaSy...",    // <-- YOUR REAL VALUES GO HERE
-  authDomain: "hbc-12345.firebaseapp.com",
-  projectId: "hbc-12345",
-  storageBucket: "hbc-12345.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef12345"
+  apiKey: "AIzaSyDyY5EnMe-RfdiS9i6EKTG4t5ThjvrV1BE",
+  authDomain: "humanbehindcurtain.firebaseapp.com",
+  projectId: "humanbehindcurtain",
+  storageBucket: "humanbehindcurtain.firebasestorage.app",
+  messagingSenderId: "629816799936",
+  appId: "1:629816799936:web:9f531c464a2c7c0e6c7325",
+  measurementId: "G-E3EY55Z643"
 };
 
 // 2. Initialize Firebase and Firestore
