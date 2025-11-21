@@ -489,29 +489,6 @@ button:not(:disabled):active {
   border: 1px solid rgba(99, 102, 241, 0.4);
 }
 
-.quick-replies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.35rem 1.25rem 0.35rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.25);
-  background: #0a1021;
-}
-
-.quick-replies button {
-  background: #0f172a;
-  color: #e5e7eb;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  border-radius: 999px;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.quick-replies button:hover:not(:disabled) {
-  background: rgba(99, 102, 241, 0.12);
-}
-
 .suggestions-bar {
   display: flex;
   flex-direction: column;

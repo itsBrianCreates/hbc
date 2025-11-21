@@ -87,7 +87,6 @@ const copySessionBtn = document.getElementById("copySession");
 const endSessionBtn = document.getElementById("endSession");
 const copyToastEl = document.getElementById("copyToast");
 const responseTimerEl = document.getElementById("responseTimer");
-const quickRepliesEl = document.getElementById("quickReplies");
 const suggestionsBarEl = document.getElementById("suggestionsBar");
 const suggestionButtonsEl = document.getElementById("suggestionButtons");
 const workerToolsEl = document.getElementById("workerTools");
@@ -95,11 +94,6 @@ const workspaceEl = document.querySelector(".workspace");
 const chatAvatarEl = document.getElementById("chatAvatar");
 const chatPersonaNameEl = document.getElementById("chatPersonaName");
 const chatCounterpartyEl = document.getElementById("chatCounterparty");
-
-const QUICK_REPLY_OPTIONS = [
-  "Got it, I will get started right away.",
-  "This usually takes me a few minutes, I will keep you posted."
-];
 
 // 5. State
 
@@ -125,7 +119,6 @@ function setRole(role) {
   updateChatPersona();
   attachMessageListener();
   attachSuggestionListener();
-  renderQuickReplies();
   updateToolsVisibility();
   updateResponseTimerVisibility(false);
 }
@@ -222,31 +215,6 @@ function stopResponseTimer() {
   }
   responseTimerStartMs = 0;
   updateResponseTimerVisibility(false);
-}
-
-function renderQuickReplies() {
-  if (!quickRepliesEl) return;
-  const isWorker = activeRole === "worker";
-  quickRepliesEl.hidden = !isWorker;
-
-  if (!isWorker) {
-    quickRepliesEl.replaceChildren();
-    return;
-  }
-
-  if (quickRepliesEl.childElementCount === QUICK_REPLY_OPTIONS.length) {
-    return;
-  }
-
-  quickRepliesEl.replaceChildren(
-    ...QUICK_REPLY_OPTIONS.map((text) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = text;
-      btn.setAttribute("data-text", text);
-      return btn;
-    })
-  );
 }
 
 function renderSuggestions(suggestions) {
@@ -585,17 +553,6 @@ messageForm.addEventListener("submit", (evt) => {
   sendButton.disabled = true;
 });
 
-if (quickRepliesEl) {
-  quickRepliesEl.addEventListener("click", (evt) => {
-    const btn = evt.target.closest("button[data-text]");
-    if (!btn) return;
-    if (activeRole !== "worker") return;
-    const text = btn.getAttribute("data-text") || "";
-    if (!text) return;
-    sendMessage(text);
-  });
-}
-
 if (suggestionButtonsEl) {
   suggestionButtonsEl.addEventListener("click", (evt) => {
     const btn = evt.target.closest("button[data-text]");
@@ -629,5 +586,4 @@ if (suggestionButtonsEl) {
     updateToolsVisibility();
     updateChatPersona();
   }
-  renderQuickReplies();
 })();
