@@ -44,15 +44,14 @@
   const roleKey = `hbcRole:${sessionId}`;
   let activeRole = localStorage.getItem(roleKey) || '';
   
-  // Firebase config placeholder
+  // Firebase config
   const firebaseConfig = {
-    // TODO: replace the placeholder values below with your Firebase project settings.
-    apiKey: 'YOUR_API_KEY',
-    authDomain: 'YOUR_AUTH_DOMAIN',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    appId: 'YOUR_APP_ID',
+    apiKey: 'AIzaSyD6wDV_vXPrQqbnHxZnTtQCzJG6TSfgrlM',
+    authDomain: 'digital-worker-chat.firebaseapp.com',
+    projectId: 'digital-worker-chat',
+    storageBucket: 'digital-worker-chat.appspot.com',
+    messagingSenderId: '982134231880',
+    appId: '1:982134231880:web:f2bcc3068ce0760cbf70ab',
   };
   
   let db = null;
