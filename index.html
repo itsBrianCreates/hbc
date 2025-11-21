@@ -1,60 +1,53 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Worker Chat</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <meta charset="utf-8" />
+  <title>Human Behind The Curtain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Conversation Simulator</p>
-        <h1>Digital Worker</h1>
-      </div>
-      <div class="session-meta">
-        <p>Session ID: <span id="session-id">…</span></p>
-        <p>Role: <span id="role-label">Not selected</span></p>
-      </div>
+  <div class="app">
+    <header class="app-header">
+      <h1>Human Behind The Curtain</h1>
+      <div id="sessionLabel" class="session-label"></div>
+      <div id="roleLabel" class="role-label"></div>
     </header>
 
-    <main>
-      <section id="role-picker" class="role-picker" aria-label="Choose your role">
+    <main class="app-main">
+      <!-- Role picker overlay -->
+      <div id="rolePicker" class="role-picker">
         <div class="role-card">
           <h2>Who are you?</h2>
-          <p class="muted">Pick how you want to view this conversation for this session.</p>
-          <div class="role-actions">
-            <button id="choose-manager" class="pill">I am a manager</button>
-            <button id="choose-operator" class="pill secondary">I am the human behind the curtain</button>
+          <p>Select how you want to participate in this session.</p>
+          <div class="role-buttons">
+            <button id="managerBtn" class="primary-btn">I am a manager</button>
+            <button id="operatorBtn" class="secondary-btn">I am the human behind the curtain</button>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section id="chat" class="chat" hidden>
-        <header class="chat__header">
-          <div>
-            <p class="eyebrow" id="chat-eyebrow">Role</p>
-            <h2 id="chat-title">Loading…</h2>
-          </div>
-          <p class="muted" id="chat-subtitle"></p>
-        </header>
+      <!-- Chat layout -->
+      <section class="chat-container">
+        <div class="chat-history" id="messages"></div>
 
-        <div id="message-list" class="history" aria-live="polite"></div>
-
-        <form id="composer" class="composer">
-          <textarea id="message-input" placeholder="Type a message" rows="2"></textarea>
-          <button type="submit" id="send-button" disabled>Send</button>
+        <form class="chat-input" id="messageForm">
+          <textarea
+            id="messageInput"
+            rows="2"
+            placeholder="Type a message…"
+          ></textarea>
+          <button type="submit" id="sendButton" disabled>Send</button>
         </form>
-
-        <div class="status" id="status"></div>
       </section>
     </main>
   </div>
 
+  <!-- Firebase SDKs from CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- App logic -->
   <script src="app.js"></script>
 </body>
 </html>
