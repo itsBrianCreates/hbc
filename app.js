@@ -75,11 +75,24 @@ const sendButton = document.getElementById("sendButton");
 const sessionLabelEl = document.getElementById("sessionLabel");
 const roleLabelEl = document.getElementById("roleLabel");
 const roleSwitchSelect = document.getElementById("roleSwitcher");
+const copySessionBtn = document.getElementById("copySession");
+const endSessionBtn = document.getElementById("endSession");
+const copyToastEl = document.getElementById("copyToast");
+const responseTimerEl = document.getElementById("responseTimer");
+const quickRepliesEl = document.getElementById("quickReplies");
+
+const QUICK_REPLY_OPTIONS = [
+  "Got it, I will get started right away.",
+  "This usually takes me a few minutes, I will keep you posted."
+];
 
 // 5. State
 
 let activeRole = getStoredRole() || ""; // "manager" or "worker"
 let unsubscribe = null;
+let responseTimerInterval = null;
+let responseTimerStartMs = 0;
+let pendingManagerMessageId = null;
 
 // 6. UI helpers
 
@@ -94,6 +107,8 @@ function setRole(role) {
   }
   updateRoleLabel();
   attachMessageListener();
+  renderQuickReplies();
+  updateResponseTimerVisibility(false);
 }
 
 function updateRoleLabel() {
@@ -106,6 +121,75 @@ function updateRoleLabel() {
   } else {
     roleLabelEl.textContent = "Pick a role to begin";
   }
+}
+
+function updateResponseTimerVisibility(visible) {
+  if (!responseTimerEl) return;
+  if (activeRole !== "worker") {
+    responseTimerEl.hidden = true;
+    return;
+  }
+  responseTimerEl.hidden = !visible;
+}
+
+function formatElapsed(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+function startResponseTimer(startMs) {
+  if (!responseTimerEl) return;
+  responseTimerStartMs = startMs || Date.now();
+  updateResponseTimerVisibility(true);
+
+  const update = () => {
+    const elapsed = Date.now() - responseTimerStartMs;
+    responseTimerEl.textContent = `Waiting to respond · ${formatElapsed(elapsed)}`;
+  };
+
+  if (responseTimerInterval) {
+    clearInterval(responseTimerInterval);
+  }
+  update();
+  responseTimerInterval = setInterval(update, 1000);
+}
+
+function stopResponseTimer() {
+  if (responseTimerInterval) {
+    clearInterval(responseTimerInterval);
+    responseTimerInterval = null;
+  }
+  responseTimerStartMs = 0;
+  updateResponseTimerVisibility(false);
+}
+
+function renderQuickReplies() {
+  if (!quickRepliesEl) return;
+  const isWorker = activeRole === "worker";
+  quickRepliesEl.hidden = !isWorker;
+
+  if (!isWorker) {
+    quickRepliesEl.replaceChildren();
+    return;
+  }
+
+  if (quickRepliesEl.childElementCount === QUICK_REPLY_OPTIONS.length) {
+    return;
+  }
+
+  quickRepliesEl.replaceChildren(
+    ...QUICK_REPLY_OPTIONS.map((text) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = text;
+      btn.setAttribute("data-text", text);
+      return btn;
+    })
+  );
 }
 
 function renderMessages(docs) {
@@ -155,6 +239,38 @@ function renderMessages(docs) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+function showToast(message) {
+  if (!copyToastEl) return;
+  copyToastEl.textContent = message;
+  copyToastEl.classList.add("visible");
+  setTimeout(() => copyToastEl.classList.remove("visible"), 1800);
+}
+
+async function copySessionLink() {
+  const link = window.location.href;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(link);
+    } else {
+      const temp = document.createElement("input");
+      temp.value = link;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand("copy");
+      document.body.removeChild(temp);
+    }
+    showToast("Session link copied");
+  } catch (err) {
+    console.error("Failed to copy session link", err);
+    showToast("Unable to copy");
+  }
+}
+
+function endSession() {
+  localStorage.removeItem(roleStorageKey);
+  window.location.href = "../";
+}
+
 // 7. Firestore listener
 
 function attachMessageListener() {
@@ -180,7 +296,65 @@ function attachMessageListener() {
 
   unsubscribe = messagesRef.onSnapshot(
     (snapshot) => {
-      renderMessages(snapshot.docs);
+      const docs = snapshot.docs;
+      renderMessages(docs);
+
+      if (activeRole !== "worker") {
+        stopResponseTimer();
+        pendingManagerMessageId = null;
+        return;
+      }
+
+      // track latest manager and worker messages
+      let latestManager = null;
+      let latestWorker = null;
+      const getMillis = (doc) => {
+        const data = doc.data();
+        const ts = data.timestamp;
+        if (ts?.toMillis) return ts.toMillis();
+        if (ts instanceof Date) return ts.getTime();
+        if (typeof data.createdAt === "number") return data.createdAt;
+        return 0;
+      };
+
+      docs.forEach((docItem) => {
+        const role = docItem.data().role === "worker" ? "worker" : "manager";
+        const ts = getMillis(docItem);
+        if (role === "manager") {
+          if (!latestManager || ts >= latestManager.time) {
+            latestManager = { id: docItem.id, time: ts };
+          }
+        } else if (role === "worker") {
+          if (!latestWorker || ts >= latestWorker.time) {
+            latestWorker = { id: docItem.id, time: ts };
+          }
+        }
+      });
+
+      if (!latestManager) {
+        stopResponseTimer();
+        pendingManagerMessageId = null;
+        return;
+      }
+
+      const workerAfterManager =
+        latestWorker && latestWorker.time > latestManager.time;
+
+      if (workerAfterManager) {
+        stopResponseTimer();
+        pendingManagerMessageId = null;
+        return;
+      }
+
+      // pending manager message
+      if (pendingManagerMessageId !== latestManager.id) {
+        pendingManagerMessageId = latestManager.id;
+        startResponseTimer(Date.now());
+      } else if (!responseTimerInterval) {
+        startResponseTimer(responseTimerStartMs || Date.now());
+      } else {
+        updateResponseTimerVisibility(true);
+      }
     },
     (err) => {
       console.error("Error listening to messages", err);
@@ -212,6 +386,10 @@ async function sendMessage(text) {
       role,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
+    if (role === "worker") {
+      stopResponseTimer();
+      pendingManagerMessageId = null;
+    }
   } catch (err) {
     console.error("Error sending message", err);
   }
@@ -228,6 +406,14 @@ if (roleSwitchSelect) {
     if (!nextRole) return;
     setRole(nextRole);
   });
+}
+
+if (copySessionBtn) {
+  copySessionBtn.addEventListener("click", () => copySessionLink());
+}
+
+if (endSessionBtn) {
+  endSessionBtn.addEventListener("click", () => endSession());
 }
 
 messageInput.addEventListener("input", () => {
@@ -254,6 +440,17 @@ messageForm.addEventListener("submit", (evt) => {
   sendButton.disabled = true;
 });
 
+if (quickRepliesEl) {
+  quickRepliesEl.addEventListener("click", (evt) => {
+    const btn = evt.target.closest("button[data-text]");
+    if (!btn) return;
+    if (activeRole !== "worker") return;
+    const text = btn.getAttribute("data-text") || "";
+    if (!text) return;
+    sendMessage(text);
+  });
+}
+
 // 10. Initial boot
 
 (function boot() {
@@ -271,4 +468,5 @@ messageForm.addEventListener("submit", (evt) => {
     }
     attachMessageListener();
   }
+  renderQuickReplies();
 })();

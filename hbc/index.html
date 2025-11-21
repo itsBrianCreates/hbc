@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Human Behind The Curtain</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Human Behind The Curtain</h1>
+      <div class="header-meta">
+        <div id="sessionLabel" class="session-label"></div>
+        <div class="role-controls">
+          <div id="roleLabel" class="role-label"></div>
+          <label class="role-switch">
+            <span>Switch role</span>
+            <select id="roleSwitcher">
+              <option value="">Select…</option>
+              <option value="manager">Manager</option>
+              <option value="worker">Human behind the curtain</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <nav class="chat-nav">
+      <div class="nav-left">
+        <button id="copySession" type="button" class="ghost-btn">Copy Session Link</button>
+        <div id="copyToast" class="toast" role="status" aria-live="polite"></div>
+      </div>
+      <div class="nav-right">
+        <button id="endSession" type="button" class="danger-btn">End Session</button>
+      </div>
+    </nav>
+
+    <main class="app-main">
+      <!-- Role picker overlay -->
+      <div id="rolePicker" class="role-picker">
+        <div class="role-card">
+          <h2>Who are you?</h2>
+          <p>Select how you want to participate in this session.</p>
+          <div class="role-buttons">
+            <button id="managerBtn" class="primary-btn">I am a manager</button>
+            <button id="operatorBtn" class="secondary-btn">I am the human behind the curtain</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat layout -->
+      <section class="chat-container">
+        <div id="responseTimer" class="response-timer" hidden></div>
+        <div class="chat-history" id="messages"></div>
+
+        <div id="quickReplies" class="quick-replies" hidden></div>
+
+        <form class="chat-input" id="messageForm">
+          <textarea
+            id="messageInput"
+            rows="2"
+            placeholder="Type a message…"
+          ></textarea>
+          <button type="submit" id="sendButton" disabled>Send</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Firebase SDKs from CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- App logic -->
+  <script src="../app.js"></script>
+</body>
+</html>

@@ -2,64 +2,81 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Human Behind The Curtain</title>
+  <title>Human Behind The Curtain – Sessions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="app">
-    <header class="app-header">
+<body class="landing-body">
+  <main class="landing">
+    <header class="landing__header">
+      <p class="eyebrow">Conversation Simulator</p>
       <h1>Human Behind The Curtain</h1>
-      <div class="header-meta">
-        <div id="sessionLabel" class="session-label"></div>
-        <div class="role-controls">
-          <div id="roleLabel" class="role-label"></div>
-          <label class="role-switch">
-            <span>Switch role</span>
-            <select id="roleSwitcher">
-              <option value="">Select…</option>
-              <option value="manager">Manager</option>
-              <option value="worker">Human behind the curtain</option>
-            </select>
-          </label>
-        </div>
-      </div>
+      <p class="muted">Start a new session or join an existing one to chat as the manager or human behind the curtain.</p>
     </header>
 
-    <main class="app-main">
-      <!-- Role picker overlay -->
-      <div id="rolePicker" class="role-picker">
-        <div class="role-card">
-          <h2>Who are you?</h2>
-          <p>Select how you want to participate in this session.</p>
-          <div class="role-buttons">
-            <button id="managerBtn" class="primary-btn">I am a manager</button>
-            <button id="operatorBtn" class="secondary-btn">I am the human behind the curtain</button>
-          </div>
+    <section class="landing__card">
+      <div class="landing__actions">
+        <button id="startSession" class="primary-btn" type="button">Start New Session</button>
+      </div>
+      <div class="landing__join">
+        <label for="joinId" class="muted">Join an existing session</label>
+        <div class="join-input">
+          <input id="joinId" type="text" placeholder="Paste session ID" />
+          <button id="joinSession" class="secondary-btn" type="button">Join</button>
         </div>
       </div>
+      <p class="muted small">Sessions are just shared IDs. Copy and share the link with the other participant.</p>
+    </section>
+  </main>
 
-      <!-- Chat layout -->
-      <section class="chat-container">
-        <div class="chat-history" id="messages"></div>
+  <script>
+    (function () {
+      const startBtn = document.getElementById("startSession");
+      const joinBtn = document.getElementById("joinSession");
+      const joinInput = document.getElementById("joinId");
 
-        <form class="chat-input" id="messageForm">
-          <textarea
-            id="messageInput"
-            rows="2"
-            placeholder="Type a message…"
-          ></textarea>
-          <button type="submit" id="sendButton" disabled>Send</button>
-        </form>
-      </section>
-    </main>
-  </div>
+      function generateSessionId() {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return "s_" + Math.random().toString(36).slice(2, 10);
+      }
 
-  <!-- Firebase SDKs from CDN -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+      function extractSessionId(input) {
+        const trimmed = (input || "").trim();
+        if (!trimmed) return "";
+        try {
+          const url = new URL(trimmed);
+          const param = url.searchParams.get("session");
+          if (param) return param;
+        } catch (e) {
+          // not a full URL, treat as raw id
+        }
+        return trimmed;
+      }
 
-  <!-- App logic -->
-  <script src="app.js"></script>
+      function goToSession(id) {
+        const sessionId = extractSessionId(id);
+        if (!sessionId) return;
+        const base = "hbc/?session=" + encodeURIComponent(sessionId);
+        window.location.href = base;
+      }
+
+      startBtn.addEventListener("click", () => {
+        const id = generateSessionId();
+        goToSession(id);
+      });
+
+      joinBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        goToSession(joinInput.value);
+      });
+
+      joinInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          joinBtn.click();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
