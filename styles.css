@@ -150,6 +150,15 @@ main {
   gap: 12px;
 }
 
+.system-message {
+  text-align: center;
+  color: var(--muted);
+  background: #f8fafc;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
 .message {
   max-width: 80%;
   padding: 12px 14px;
