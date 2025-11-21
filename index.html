@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Worker - Manager & Operator</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Digital Worker Conversation Sandbox</h1>
+    <p class="session-info">Session ID: <span id="session-id">…</span> — Role: <span id="role-label">…</span></p>
+  </header>
+  <main class="layout">
+    <section class="panel" aria-label="Manager panel">
+      <header class="panel__header">
+        <h2>Manager</h2>
+      </header>
+      <div class="history" id="manager-history" aria-live="polite"></div>
+      <form class="composer" id="manager-form">
+        <textarea id="manager-input" placeholder="Type a message to the digital worker" rows="2"></textarea>
+        <button type="submit" id="manager-send" disabled>Send</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-label="Operator panel">
+      <header class="panel__header">
+        <h2>Digital Worker (Human Behind the Curtain)</h2>
+      </header>
+      <div class="history" id="operator-history" aria-live="polite"></div>
+      <form class="composer" id="operator-form">
+        <textarea id="operator-input" placeholder="Reply as the digital worker" rows="2"></textarea>
+        <button type="submit" id="operator-send" disabled>Send</button>
+      </form>
+    </section>
+  </main>
+
+  <div class="toast" id="config-warning" role="alert" aria-live="assertive"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
