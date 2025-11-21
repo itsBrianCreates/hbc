@@ -5,36 +5,33 @@
   <title>Human Behind The Curtain</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../styles.css" />
-</head>
-<body>
-  <div class="app">
-    <header class="app-header">
-      <h1>Human Behind The Curtain</h1>
-      <div class="header-meta">
-        <div id="sessionLabel" class="session-label"></div>
-        <div class="role-controls">
-          <div id="roleLabel" class="role-label"></div>
-          <label class="role-switch">
-            <span>Switch role</span>
-            <select id="roleSwitcher">
-              <option value="">Select…</option>
-              <option value="manager">Manager</option>
-              <option value="worker">Human behind the curtain</option>
-            </select>
-          </label>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>Human Behind The Curtain</h1>
+        <div class="header-actions">
+          <div id="sessionLabel" class="session-pill"></div>
+          <button id="copySession" type="button" class="ghost-btn">Copy Session Link</button>
+          <button id="endSession" type="button" class="danger-btn">End Session</button>
+          <div id="copyToast" class="toast" role="status" aria-live="polite"></div>
         </div>
-      </div>
-    </header>
+      </header>
 
-    <nav class="chat-nav">
-      <div class="nav-left">
-        <button id="copySession" type="button" class="ghost-btn">Copy Session Link</button>
-        <div id="copyToast" class="toast" role="status" aria-live="polite"></div>
-      </div>
-      <div class="nav-right">
-        <button id="endSession" type="button" class="danger-btn">End Session</button>
-      </div>
-    </nav>
+      <section class="role-bar">
+        <div class="role-bar__label">
+          <p class="eyebrow">Your role</p>
+          <div id="roleLabel" class="role-label"></div>
+        </div>
+        <label class="role-switch">
+          <span>Switch role</span>
+          <select id="roleSwitcher">
+            <option value="">Select…</option>
+            <option value="manager">Manager</option>
+            <option value="worker">Human behind the curtain</option>
+          </select>
+        </label>
+      </section>
 
     <main class="app-main">
       <!-- Role picker overlay -->
@@ -50,21 +47,46 @@
       </div>
 
       <!-- Chat layout -->
-      <section class="chat-container">
-        <div id="responseTimer" class="response-timer" hidden></div>
-        <div class="chat-history" id="messages"></div>
+      <div class="workspace">
+        <section class="chat-container">
+          <div class="chat-header-bar">
+            <div class="chat-persona">
+              <div id="chatAvatar" class="chat-avatar">HC</div>
+              <div class="chat-persona__text">
+                <div id="chatPersonaName" class="chat-persona__name">Human Manager</div>
+                <div id="chatCounterparty" class="chat-persona__meta">Chatting with Digital Worker</div>
+              </div>
+            </div>
+          </div>
 
-        <div id="quickReplies" class="quick-replies" hidden></div>
+          <div class="chat-tabs">
+            <button type="button" class="chat-tab active">Chat</button>
+          </div>
 
-        <form class="chat-input" id="messageForm">
-          <textarea
-            id="messageInput"
-            rows="2"
-            placeholder="Type a message…"
-          ></textarea>
-          <button type="submit" id="sendButton" disabled>Send</button>
-        </form>
-      </section>
+          <div class="chat-history" id="messages"></div>
+
+          <div id="quickReplies" class="quick-replies" hidden></div>
+
+          <form class="chat-input" id="messageForm">
+            <textarea
+              id="messageInput"
+              rows="2"
+              placeholder="Type a message…"
+            ></textarea>
+            <button type="submit" id="sendButton" disabled>Send</button>
+          </form>
+        </section>
+
+        <aside id="workerTools" class="tools-panel" hidden>
+          <div class="tool-card">
+            <div class="tool-card__header">
+              <p class="eyebrow">Worker tools</p>
+              <h3>Response timer</h3>
+            </div>
+            <div id="responseTimer" class="response-timer" hidden></div>
+          </div>
+        </aside>
+      </div>
     </main>
   </div>
 

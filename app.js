@@ -80,6 +80,11 @@ const endSessionBtn = document.getElementById("endSession");
 const copyToastEl = document.getElementById("copyToast");
 const responseTimerEl = document.getElementById("responseTimer");
 const quickRepliesEl = document.getElementById("quickReplies");
+const workerToolsEl = document.getElementById("workerTools");
+const workspaceEl = document.querySelector(".workspace");
+const chatAvatarEl = document.getElementById("chatAvatar");
+const chatPersonaNameEl = document.getElementById("chatPersonaName");
+const chatCounterpartyEl = document.getElementById("chatCounterparty");
 
 const QUICK_REPLY_OPTIONS = [
   "Got it, I will get started right away.",
@@ -106,8 +111,10 @@ function setRole(role) {
     roleSwitchSelect.value = role;
   }
   updateRoleLabel();
+  updateChatPersona();
   attachMessageListener();
   renderQuickReplies();
+  updateToolsVisibility();
   updateResponseTimerVisibility(false);
 }
 
@@ -123,6 +130,29 @@ function updateRoleLabel() {
   }
 }
 
+function updateChatPersona() {
+  if (!chatAvatarEl || !chatPersonaNameEl || !chatCounterpartyEl) return;
+  const isManager = activeRole === "manager";
+  const isWorker = activeRole === "worker";
+
+  if (!activeRole) {
+    chatAvatarEl.textContent = "--";
+    chatPersonaNameEl.textContent = "Pick a role to start";
+    chatCounterpartyEl.textContent = "Choose Manager or Digital Worker to begin chatting";
+    return;
+  }
+
+  if (isManager) {
+    chatAvatarEl.textContent = "HC";
+    chatPersonaNameEl.textContent = "Digital Worker";
+    chatCounterpartyEl.textContent = "Chat · You are signed in as Human Manager";
+  } else if (isWorker) {
+    chatAvatarEl.textContent = "DW";
+    chatPersonaNameEl.textContent = "Human Manager";
+    chatCounterpartyEl.textContent = "Chat · You are replying as Digital Worker";
+  }
+}
+
 function updateResponseTimerVisibility(visible) {
   if (!responseTimerEl) return;
   if (activeRole !== "worker") {
@@ -130,6 +160,16 @@ function updateResponseTimerVisibility(visible) {
     return;
   }
   responseTimerEl.hidden = !visible;
+}
+
+function updateToolsVisibility() {
+  if (!workerToolsEl) return;
+  const isWorker = activeRole === "worker";
+  workerToolsEl.hidden = !isWorker;
+  if (workspaceEl) {
+    workspaceEl.classList.toggle("worker-view", isWorker);
+    workspaceEl.classList.toggle("manager-view", !isWorker);
+  }
 }
 
 function formatElapsed(ms) {
@@ -461,12 +501,16 @@ if (quickRepliesEl) {
     if (roleSwitchSelect) {
       roleSwitchSelect.value = "";
     }
+    updateToolsVisibility();
+    updateChatPersona();
   } else {
     rolePickerEl.classList.add("hidden");
     if (roleSwitchSelect) {
       roleSwitchSelect.value = activeRole;
     }
     attachMessageListener();
+    updateToolsVisibility();
+    updateChatPersona();
   }
   renderQuickReplies();
 })();
