@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const {setGlobalOptions} = functions;
 const {onDocumentCreated} = require("firebase-functions/v2/firestore");
+const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
@@ -9,6 +10,7 @@ setGlobalOptions({maxInstances: 10, region: "us-central1"});
 admin.initializeApp();
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
+const OPENAI_KEY = defineSecret("OPENAI_KEY");
 
 /**
  * Parse the model output into an array of suggestion strings.
@@ -56,7 +58,10 @@ async function replaceSuggestions(sessionId, suggestions, sourceMessageId) {
 }
 
 exports.generateSuggestions = onDocumentCreated(
-  {document: "sessions/{sessionId}/messages/{messageId}"},
+  {
+    document: "sessions/{sessionId}/messages/{messageId}",
+    secrets: [OPENAI_KEY]
+  },
   async (event) => {
     const snap = event.data;
     if (!snap) return;
@@ -68,7 +73,7 @@ exports.generateSuggestions = onDocumentCreated(
     const messageText = (data?.text || "").trim();
     if (!messageText) return;
 
-    const apiKey = functions.config()?.openai?.key;
+    const apiKey = OPENAI_KEY.value() || process.env.OPENAI_KEY;
     if (!apiKey) {
       logger.error("OpenAI API key is not set in functions config (openai.key).");
       return;
