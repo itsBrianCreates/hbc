@@ -3,42 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Worker - Manager & Operator</title>
+  <title>Digital Worker Chat</title>
   <link rel="stylesheet" href="styles.css">
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <h1>Digital Worker Conversation Sandbox</h1>
-    <p class="session-info">Session ID: <span id="session-id">…</span> — Role: <span id="role-label">…</span></p>
-  </header>
-  <main class="layout">
-    <section class="panel" aria-label="Manager panel">
-      <header class="panel__header">
-        <h2>Manager</h2>
-      </header>
-      <div class="history" id="manager-history" aria-live="polite"></div>
-      <form class="composer" id="manager-form">
-        <textarea id="manager-input" placeholder="Type a message to the digital worker" rows="2"></textarea>
-        <button type="submit" id="manager-send" disabled>Send</button>
-      </form>
-    </section>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Conversation Simulator</p>
+        <h1>Digital Worker</h1>
+      </div>
+      <div class="session-meta">
+        <p>Session ID: <span id="session-id">…</span></p>
+        <p>Role: <span id="role-label">Not selected</span></p>
+      </div>
+    </header>
 
-    <section class="panel" aria-label="Operator panel">
-      <header class="panel__header">
-        <h2>Digital Worker (Human Behind the Curtain)</h2>
-      </header>
-      <div class="history" id="operator-history" aria-live="polite"></div>
-      <form class="composer" id="operator-form">
-        <textarea id="operator-input" placeholder="Reply as the digital worker" rows="2"></textarea>
-        <button type="submit" id="operator-send" disabled>Send</button>
-      </form>
-    </section>
-  </main>
+    <main>
+      <section id="role-picker" class="role-picker" aria-label="Choose your role">
+        <div class="role-card">
+          <h2>Who are you?</h2>
+          <p class="muted">Pick how you want to view this conversation for this session.</p>
+          <div class="role-actions">
+            <button id="choose-manager" class="pill">I am a manager</button>
+            <button id="choose-operator" class="pill secondary">I am the human behind the curtain</button>
+          </div>
+        </div>
+      </section>
 
-  <div class="toast" id="config-warning" role="alert" aria-live="assertive"></div>
+      <section id="chat" class="chat" hidden>
+        <header class="chat__header">
+          <div>
+            <p class="eyebrow" id="chat-eyebrow">Role</p>
+            <h2 id="chat-title">Loading…</h2>
+          </div>
+          <p class="muted" id="chat-subtitle"></p>
+        </header>
+
+        <div id="message-list" class="history" aria-live="polite"></div>
+
+        <form id="composer" class="composer">
+          <textarea id="message-input" placeholder="Type a message" rows="2"></textarea>
+          <button type="submit" id="send-button" disabled>Send</button>
+        </form>
+
+        <div class="status" id="status"></div>
+      </section>
+    </main>
+  </div>
 
   <script src="app.js"></script>
 </body>

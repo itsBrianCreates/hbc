@@ -1,25 +1,31 @@
 (function () {
-  const sessionSpan = document.getElementById('session-id');
-  const roleLabel = document.getElementById('role-label');
-  const managerHistory = document.getElementById('manager-history');
-  const operatorHistory = document.getElementById('operator-history');
-  const managerForm = document.getElementById('manager-form');
-  const operatorForm = document.getElementById('operator-form');
-  const managerInput = document.getElementById('manager-input');
-  const operatorInput = document.getElementById('operator-input');
-  const managerSend = document.getElementById('manager-send');
-  const operatorSend = document.getElementById('operator-send');
-  const configWarning = document.getElementById('config-warning');
-
-  // Utility: parse query params
-  const params = new URLSearchParams(window.location.search);
-  let sessionId = params.get('session');
-  const operatorFlag = params.get('operator') === '1';
-
   const ROLE_MANAGER = 'manager';
   const ROLE_WORKER = 'worker';
 
-  // Generate a simple session id if missing
+  const rolePicker = document.getElementById('role-picker');
+  const chooseManager = document.getElementById('choose-manager');
+  const chooseOperator = document.getElementById('choose-operator');
+  const chatSection = document.getElementById('chat');
+  const chatTitle = document.getElementById('chat-title');
+  const chatSubtitle = document.getElementById('chat-subtitle');
+  const chatEyebrow = document.getElementById('chat-eyebrow');
+  const messageList = document.getElementById('message-list');
+  const composerForm = document.getElementById('composer');
+  const messageInput = document.getElementById('message-input');
+  const sendButton = document.getElementById('send-button');
+  const sessionSpan = document.getElementById('session-id');
+  const roleLabel = document.getElementById('role-label');
+  const status = document.getElementById('status');
+
+  if (!rolePicker || !messageInput) {
+    console.error('Required DOM nodes missing.');
+    return;
+  }
+
+  // Session handling
+  const params = new URLSearchParams(window.location.search);
+  let sessionId = params.get('session');
+
   function generateSessionId() {
     if (crypto.randomUUID) return crypto.randomUUID();
     return 'session-' + Math.random().toString(36).slice(2, 10);
@@ -32,163 +38,178 @@
     history.replaceState(null, '', newUrl);
   }
 
-  // Persist role per URL in localStorage
-  const roleKey = `dw-role-${window.location.pathname}-${sessionId}`;
-  const storedRole = localStorage.getItem(roleKey);
-  const activeRole = operatorFlag ? ROLE_WORKER : ROLE_MANAGER;
-  if (!storedRole || storedRole !== activeRole) {
-    localStorage.setItem(roleKey, activeRole);
-  }
-
   sessionSpan.textContent = sessionId;
-  roleLabel.textContent = activeRole === ROLE_MANAGER ? 'Manager' : 'Operator';
 
-  function setRoleControls(role) {
-    const isManager = role === ROLE_MANAGER;
-    managerInput.placeholder = isManager
-      ? 'Type a message to the digital worker'
-      : 'Viewing as operator — manager input disabled here';
-    operatorInput.placeholder = isManager
-      ? 'Viewing as manager — operator input disabled here'
-      : 'Reply as the digital worker';
+  const roleKey = `hbcRole:${sessionId}`;
+  let activeRole = localStorage.getItem(roleKey) || '';
 
-    managerInput.disabled = !isManager;
-    managerSend.disabled = !isManager;
-    operatorInput.disabled = isManager;
-    operatorSend.disabled = isManager;
-  }
-
-  // Firebase configuration placeholder — replace with your project values
+  // Firebase config placeholder
   const firebaseConfig = {
+    // TODO: replace the placeholder values below with your Firebase project settings.
     apiKey: 'YOUR_API_KEY',
     authDomain: 'YOUR_AUTH_DOMAIN',
     projectId: 'YOUR_PROJECT_ID',
     storageBucket: 'YOUR_STORAGE_BUCKET',
     messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    appId: 'YOUR_APP_ID'
+    appId: 'YOUR_APP_ID',
   };
 
-  let db;
-  try {
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'YOUR_API_KEY') {
-      throw new Error('Firebase config missing');
+  let db = null;
+  let messagesRef = null;
+  let unsubscribe = null;
+
+  function firebaseReady() {
+    if (typeof firebase === 'undefined') return false;
+    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'YOUR_API_KEY') return false;
+    return true;
+  }
+
+  function initializeFirebase() {
+    if (!firebaseReady()) {
+      status.textContent = 'Firebase is not configured. Please add your firebaseConfig in app.js.';
+      disableComposer();
+      return;
     }
-    const app = firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore(app);
-  } catch (err) {
-    configWarning.textContent = 'Firebase is not configured, please add your config in app.js';
-    configWarning.style.display = 'block';
-    disableInputs();
-    return;
+
+    try {
+      const app = firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore(app);
+      messagesRef = db.collection('sessions').doc(sessionId).collection('messages');
+    } catch (err) {
+      console.error('Firebase init failed', err);
+      status.textContent = 'Unable to initialize Firebase. Check the console for details.';
+      disableComposer();
+    }
   }
 
-  const messagesRef = db.collection('sessions').doc(sessionId).collection('messages');
-
-  // Listen for changes
-  messagesRef.orderBy('timestamp', 'asc').onSnapshot((snapshot) => {
-    const messages = [];
-    snapshot.forEach((doc) => messages.push({ id: doc.id, ...doc.data() }));
-    renderHistory(messages);
-  }, (error) => {
-    console.error('Failed to listen to messages', error);
-  });
-
-  function renderHistory(messages) {
-    managerHistory.innerHTML = '';
-    operatorHistory.innerHTML = '';
-    messages.forEach((msg) => {
-      const managerBubble = createMessageBubble(msg, ROLE_MANAGER);
-      const operatorBubble = createMessageBubble(msg, ROLE_WORKER);
-      managerHistory.appendChild(managerBubble);
-      operatorHistory.appendChild(operatorBubble);
-    });
-    scrollToBottom(managerHistory);
-    scrollToBottom(operatorHistory);
+  function disableComposer() {
+    messageInput.disabled = true;
+    sendButton.disabled = true;
   }
 
-  function createMessageBubble(message, perspective) {
-    const bubble = document.createElement('div');
-    const isManager = message.role === ROLE_MANAGER;
-    const roleText = isManager ? 'Manager' : 'Digital Worker';
-    const bubbleRoleClass = (perspective === ROLE_MANAGER)
-      ? (isManager ? 'manager' : 'worker')
-      : (isManager ? 'worker' : 'manager');
-
-    bubble.className = `message ${bubbleRoleClass}`;
-
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    const time = message.timestamp?.toDate ? message.timestamp.toDate() : new Date(message.timestamp || Date.now());
-    meta.innerHTML = `<span>${roleText}</span><span>${formatTime(time)}</span>`;
-
-    const text = document.createElement('div');
-    text.className = 'body';
-    text.textContent = message.text;
-
-    bubble.appendChild(meta);
-    bubble.appendChild(text);
-    return bubble;
+  function enableComposer() {
+    messageInput.disabled = false;
+    updateSendState();
   }
+
+  function setRole(role) {
+    activeRole = role;
+    localStorage.setItem(roleKey, role);
+    roleLabel.textContent = role === ROLE_MANAGER ? 'Manager' : 'Human behind the curtain';
+
+    chatEyebrow.textContent = role === ROLE_MANAGER ? 'Manager view' : 'Operator view';
+    chatTitle.textContent = role === ROLE_MANAGER ? 'Digital Worker' : 'Human Behind the Curtain';
+    chatSubtitle.textContent = role === ROLE_MANAGER
+      ? 'You are the manager. Ask the digital worker to perform tasks.'
+      : 'You are replying on behalf of the digital worker. Respond to the manager.';
+
+    messageInput.placeholder = role === ROLE_MANAGER
+      ? 'Type a task or question for the digital worker'
+      : 'Reply to the manager as the digital worker (Shift+Enter for new line)';
+
+    rolePicker.hidden = true;
+    chatSection.hidden = false;
+    messageInput.focus();
+    enableComposer();
+    updateSendState();
+  }
+
+  chooseManager.addEventListener('click', () => setRole(ROLE_MANAGER));
+  chooseOperator.addEventListener('click', () => setRole(ROLE_WORKER));
+
+  // Restore role or show picker
+  if (activeRole === ROLE_MANAGER || activeRole === ROLE_WORKER) {
+    setRole(activeRole);
+  } else {
+    rolePicker.hidden = false;
+    chatSection.hidden = true;
+  }
+
+  initializeFirebase();
 
   function formatTime(date) {
     return new Intl.DateTimeFormat([], {
       hour: 'numeric',
       minute: '2-digit',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     }).format(date);
   }
 
-  function scrollToBottom(container) {
-    container.scrollTop = container.scrollHeight;
+  function renderMessages(messages) {
+    messageList.innerHTML = '';
+    messages.forEach((msg) => {
+      const bubble = document.createElement('div');
+      const isManager = msg.role === ROLE_MANAGER;
+      const roleLabel = isManager ? 'Manager' : 'Digital Worker';
+      bubble.className = `message ${isManager ? 'manager' : 'worker'}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const timestamp = msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.createdAt || Date.now());
+      meta.innerHTML = `<span>${roleLabel}</span><span>${formatTime(timestamp)}</span>`;
+
+      const body = document.createElement('div');
+      body.className = 'body';
+      body.textContent = msg.text;
+
+      bubble.appendChild(meta);
+      bubble.appendChild(body);
+      messageList.appendChild(bubble);
+    });
+    messageList.scrollTop = messageList.scrollHeight;
   }
 
-  async function sendMessage(role, text) {
+  function startListening() {
+    if (!messagesRef) return;
+    if (unsubscribe) unsubscribe();
+
+    unsubscribe = messagesRef
+      .orderBy('createdAt', 'asc')
+      .onSnapshot((snapshot) => {
+        const messages = [];
+        snapshot.forEach((doc) => messages.push({ id: doc.id, ...doc.data() }));
+        renderMessages(messages);
+      }, (err) => {
+        console.error('Failed to listen for messages', err);
+        status.textContent = 'Real-time updates are unavailable right now.';
+      });
+  }
+
+  startListening();
+
+  async function sendMessage(text) {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || !messagesRef) return;
     const payload = {
       text: trimmed,
-      role,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      role: activeRole === ROLE_MANAGER ? ROLE_MANAGER : ROLE_WORKER,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAt: Date.now(),
     };
     await messagesRef.add(payload);
   }
 
-  function handleSubmit(event, role, textarea) {
-    event.preventDefault();
-    const value = textarea.value;
+  function updateSendState() {
+    const hasText = messageInput.value.trim().length > 0;
+    sendButton.disabled = !hasText || messageInput.disabled;
+  }
+
+  composerForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = messageInput.value;
     if (!value.trim()) return;
-    sendMessage(role, value).catch((err) => console.error('Send failed', err));
-    textarea.value = '';
-    updateButtonState();
-    textarea.focus();
-  }
-
-  managerForm.addEventListener('submit', (e) => handleSubmit(e, ROLE_MANAGER, managerInput));
-  operatorForm.addEventListener('submit', (e) => handleSubmit(e, ROLE_WORKER, operatorInput));
-
-  function updateButtonState() {
-    managerSend.disabled = managerSend.disabled || !managerInput.value.trim();
-    operatorSend.disabled = operatorSend.disabled || !operatorInput.value.trim();
-  }
-
-  [managerInput, operatorInput].forEach((input) => {
-    input.addEventListener('input', updateButtonState);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const form = input === managerInput ? managerForm : operatorForm;
-        form.requestSubmit();
-      }
-    });
+    sendMessage(value).catch((err) => console.error('Send failed', err));
+    messageInput.value = '';
+    updateSendState();
+    messageInput.focus();
   });
 
-  function disableInputs() {
-    [managerInput, operatorInput, managerSend, operatorSend].forEach((el) => {
-      el.disabled = true;
-    });
-  }
-
-  setRoleControls(activeRole);
-  updateButtonState();
+  messageInput.addEventListener('input', updateSendState);
+  messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      composerForm.requestSubmit();
+    }
+  });
 })();
