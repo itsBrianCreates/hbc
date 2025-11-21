@@ -44,8 +44,8 @@
   const roleKey = `hbcRole:${sessionId}`;
   let activeRole = localStorage.getItem(roleKey) || '';
   
-  // Firebase config
-  const firebaseConfig = {
+  // Firebase config (overridable via window.HBC_FIREBASE_CONFIG)
+  const defaultFirebaseConfig = {
     apiKey: 'AIzaSyD6wDV_vXPrQqbnHxZnTtQCzJG6TSfgrlM',
     authDomain: 'digital-worker-chat.firebaseapp.com',
     projectId: 'digital-worker-chat',
@@ -53,6 +53,8 @@
     messagingSenderId: '982134231880',
     appId: '1:982134231880:web:f2bcc3068ce0760cbf70ab',
   };
+
+  const firebaseConfig = window.HBC_FIREBASE_CONFIG || defaultFirebaseConfig;
   
   let db = null;
   let messagesRef = null;
@@ -75,6 +77,7 @@
       const app = firebase.initializeApp(firebaseConfig);
       db = firebase.firestore(app);
       messagesRef = db.collection('sessions').doc(sessionId).collection('messages');
+      status.textContent = `Connected to Firebase project "${firebaseConfig.projectId}".`;
     } catch (err) {
       console.error('Firebase init failed', err);
       status.textContent = 'Unable to initialize Firebase. Check the console for details.';
